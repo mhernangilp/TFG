@@ -1,5 +1,6 @@
 import os
 import email
+from collections import defaultdict
 
 def parse_email(raw_email):
     msg = email.message_from_string(raw_email)
@@ -7,7 +8,6 @@ def parse_email(raw_email):
     body = ""
     try:
         if msg.is_multipart():
-            # Filtrar y decodificar las partes del cuerpo que no son None
             body = ''.join([part.get_payload(decode=True).decode('utf-8', errors='ignore') if part.get_payload(decode=True) else '' for part in msg.get_payload()])
         else:
             payload = msg.get_payload(decode=True)
@@ -24,8 +24,8 @@ def load_emails_from_folder(folder_path, multi_email_file=False):
             with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
                 email_content = file.read()
                 if multi_email_file:
-                    for raw_email in email_content.split('\n\nFrom '):  # Separador típico en archivos MBOX
-                        if raw_email.strip():  # Evita procesar bloques vacíos
+                    for raw_email in email_content.split('\n\nFrom '):
+                        if raw_email.strip():
                             headers, body = parse_email("From " + raw_email.strip())
                             emails.append((headers, body))
                 else:
@@ -36,14 +36,35 @@ def load_emails_from_folder(folder_path, multi_email_file=False):
             exit(1)
     return emails
 
+def get_common_attributes(emails, threshold=0.7):
+    attribute_counts = defaultdict(int)
+    total_emails = len(emails)
+    
+    # Contar la frecuencia de cada atributo en los encabezados
+    for headers, _ in emails:
+        for attribute in headers:
+            attribute_counts[attribute] += 1
+    
+    # Calcular el umbral en base al porcentaje especificado
+    min_count = total_emails * threshold
+    common_attributes = {attr for attr, count in attribute_counts.items() if count >= min_count}
+    
+    return common_attributes
+
 # Carpetas de emails de phishing y de Enron
-phishing_folder_path = 'C:/Users/marky/OneDrive/Escritorio/TFG/resources/test/phishing'
-enron_folder_path = 'C:/Users/marky/OneDrive/Escritorio/TFG/resources/test/enron'
+phishing_folder_path = '/home/marky/TFG/resources/test/phishing'
+enron_folder_path = '/home/marky/TFG/resources/test/enron'
 
 # Cargar emails de ambas carpetas
 phishing_emails = load_emails_from_folder(phishing_folder_path, multi_email_file=True)
 enron_emails = load_emails_from_folder(enron_folder_path, multi_email_file=False)
+all_emails = phishing_emails + enron_emails
 
-# Mostrar headers de los emails
-for headers, body in phishing_emails + enron_emails:
-    print(headers)
+# Obtener atributos comunes que están presentes en el 70% de los correos
+common_attributes = get_common_attributes(all_emails, threshold=0.7)
+
+print("Nº phishing:", len(phishing_emails), ", Nº enron", len(enron_emails))
+# Filtrar y mostrar solo los headers con los atributos comunes
+for headers, body in all_emails:
+    filtered_headers = {key: value for key, value in headers.items() if key in common_attributes}
+    print(filtered_headers)
