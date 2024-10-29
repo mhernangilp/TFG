@@ -33,7 +33,7 @@ def load_emails_from_folder(folder_path, multi_email_file=False, label=0):
                 emails.append((headers, body, label))
     return emails
 
-def get_common_attributes(emails, threshold=0.7):
+def get_common_attributes(emails, threshold=0.6):
     attribute_counts = defaultdict(int)
     total_emails = len(emails)
     
@@ -57,8 +57,8 @@ phishing_emails = load_emails_from_folder(phishing_folder_path, multi_email_file
 enron_emails = load_emails_from_folder(enron_folder_path, multi_email_file=False, label=0)
 all_emails = phishing_emails + enron_emails
 
-# Obtener atributos comunes que están presentes en el 70% de los correos
-common_attributes = get_common_attributes(all_emails, threshold=0.7)
+# Obtener atributos comunes que están presentes en el 60% de los correos
+common_attributes = get_common_attributes(all_emails, threshold=0.6)
 
 # Crear un DataFrame para guardar el dataset
 email_data = []
