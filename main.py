@@ -1,5 +1,6 @@
 import os
 import email
+import pandas as pd
 from collections import defaultdict
 
 def parse_email(raw_email):
@@ -16,24 +17,20 @@ def parse_email(raw_email):
         print(f"Error decoding email body: {e}")
     return headers, body
 
-def load_emails_from_folder(folder_path, multi_email_file=False):
+def load_emails_from_folder(folder_path, multi_email_file=False, label=0):
     emails = []
     for file_name in os.listdir(folder_path):
         file_path = os.path.join(folder_path, file_name)
-        try:
-            with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
-                email_content = file.read()
-                if multi_email_file:
-                    for raw_email in email_content.split('\n\nFrom '):
-                        if raw_email.strip():
-                            headers, body = parse_email("From " + raw_email.strip())
-                            emails.append((headers, body))
-                else:
-                    headers, body = parse_email(email_content)
-                    emails.append((headers, body))
-        except PermissionError as e:
-            print(f"Permission denied for file: {file_path}")
-            exit(1)
+        with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
+            email_content = file.read()
+            if multi_email_file:
+                for raw_email in email_content.split('\n\nFrom '):
+                    if raw_email.strip():
+                        headers, body = parse_email("From " + raw_email.strip())
+                        emails.append((headers, body, label))
+            else:
+                headers, body = parse_email(email_content)
+                emails.append((headers, body, label))
     return emails
 
 def get_common_attributes(emails, threshold=0.7):
@@ -41,7 +38,7 @@ def get_common_attributes(emails, threshold=0.7):
     total_emails = len(emails)
     
     # Contar la frecuencia de cada atributo en los encabezados
-    for headers, _ in emails:
+    for headers, _, _ in emails:
         for attribute in headers:
             attribute_counts[attribute] += 1
     
@@ -55,16 +52,25 @@ def get_common_attributes(emails, threshold=0.7):
 phishing_folder_path = '/home/marky/TFG/resources/raw_data/phishing'
 enron_folder_path = '/home/marky/TFG/resources/raw_data/enron'
 
-# Cargar emails de ambas carpetas
-phishing_emails = load_emails_from_folder(phishing_folder_path, multi_email_file=True)
-enron_emails = load_emails_from_folder(enron_folder_path, multi_email_file=False)
+# Cargar emails de ambas carpetas con su respectiva etiqueta
+phishing_emails = load_emails_from_folder(phishing_folder_path, multi_email_file=True, label=1)
+enron_emails = load_emails_from_folder(enron_folder_path, multi_email_file=False, label=0)
 all_emails = phishing_emails + enron_emails
 
 # Obtener atributos comunes que están presentes en el 70% de los correos
 common_attributes = get_common_attributes(all_emails, threshold=0.7)
 
-print("Nº phishing:", len(phishing_emails), ", Nº enron", len(enron_emails))
-# Filtrar y mostrar solo los headers con los atributos comunes
-for headers, body in all_emails:
-    filtered_headers = {key: value for key, value in headers.items() if key in common_attributes}
-    print(filtered_headers)
+# Crear un DataFrame para guardar el dataset
+email_data = []
+for headers, body, label in all_emails:
+    filtered_headers = {key: headers.get(key, None) for key in common_attributes}
+    filtered_headers['body'] = body
+    filtered_headers['is_phishing'] = label
+    email_data.append(filtered_headers)
+
+# Convertir a DataFrame y guardar en CSV
+df = pd.DataFrame(email_data)
+output_csv_path = '/home/marky/TFG/resources/dataset.csv'
+df.to_csv(output_csv_path, index=False)
+
+print(f"Dataset guardado en {output_csv_path}")
