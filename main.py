@@ -52,8 +52,8 @@ def get_common_attributes(emails, threshold=0.7):
     return common_attributes
 
 # Carpetas de emails de phishing y de Enron
-phishing_folder_path = '/home/marky/TFG/resources/test/phishing'
-enron_folder_path = '/home/marky/TFG/resources/test/enron'
+phishing_folder_path = '/home/marky/TFG/resources/raw_data/phishing'
+enron_folder_path = '/home/marky/TFG/resources/raw_data/enron'
 
 # Cargar emails de ambas carpetas
 phishing_emails = load_emails_from_folder(phishing_folder_path, multi_email_file=True)
