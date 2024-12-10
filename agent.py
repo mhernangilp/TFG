@@ -1,5 +1,17 @@
 import ollama
 
+def get_consistent_response(prompt, model="llama3.1:8b", n=5):
+    results = []
+    for _ in range(n):
+        response = ollama.chat(
+            model=model,
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
+        results.append(response["message"]["content"])
+    return max(set(results), key=results.count)
+
 subject = "Congrats! You've Been Selected For Netflix Reward"
 body = """<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.=
 w3.org/TR/html4/loose.dtd">
@@ -204,18 +216,14 @@ Evaluate each factor and assign scores from 0 to 4 based on your
 assessment.
 
 Once you have evaluated all factors, sum up the scores and convert them to 
-a final classification between 0 (Not Phishy) and 5 (Very Phishy)."""
+a final classification between 0 (Not Phishy) and 4 (Very Phishy).
+
+Give me ONLY the final number, nothing else"""
 
 print("Generating subject response ...")
+consistent_response = get_consistent_response(prompt_subject)
+print(consistent_response)
 
-response_subject = ollama.chat(model="llama3.1:8b", messages=[
-    {
-        "role": "user",
-        "content": prompt_subject,
-    }
-])
-
-print(response_subject["message"]["content"])
 
 prompt_body = f"""{body} #### Assess the given email body for potential phishing characteristics. 
 Consider the following factors and assign a score from 0 to 4, where:
@@ -260,15 +268,10 @@ Evaluate each factor and assign scores from 0 to 4 based on your
 assessment.
 
 Once you have evaluated all factors, sum up the scores and convert them to 
-a final classification between 0 (Not Phishy) and 5 (Very Phishy)."""
+a final classification between 0 (Not Phishy) and 4 (Very Phishy).
+
+Give me ONLY the final number, nothing else"""
 
 print("Generating body response ...")
-
-response_body = ollama.chat(model="llama3.1:8b", messages=[
-    {
-        "role": "user",
-        "content": prompt_body,
-    }
-])
-
-print(response_body["message"]["content"])
+consistent_response = get_consistent_response(prompt_body)
+print(consistent_response)
