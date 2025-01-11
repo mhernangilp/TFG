@@ -1,5 +1,6 @@
 import ollama
 
+# Calcular valor con frecuencia
 def get_consistent_response(prompt, model="llama3.1:8b", n=5):
     results = []
     for _ in range(n):
@@ -11,6 +12,23 @@ def get_consistent_response(prompt, model="llama3.1:8b", n=5):
         )
         results.append(response["message"]["content"])
     return max(set(results), key=results.count)
+
+# Calcular valor con media
+def get_average_response(prompt, model="llama3.1:8b", n=5):
+    results = []
+    for _ in range(n):
+        response = ollama.chat(
+            model=model,
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
+        try:
+            results.append(int(response["message"]["content"]))
+        except ValueError:
+            raise ValueError(f"El modelo devolvió una respuesta no válida: {response['message']['content']}")
+    average = round(sum(results) / len(results))
+    return average
 
 subject = "Congrats! You've Been Selected For Netflix Reward"
 body = """<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.=
@@ -221,7 +239,7 @@ a final classification between 0 (Not Phishy) and 4 (Very Phishy).
 Give me ONLY the final number, nothing else"""
 
 print("Generating subject response ...")
-consistent_response = get_consistent_response(prompt_subject)
+consistent_response = get_average_response(prompt_subject)
 print(consistent_response)
 
 
@@ -273,5 +291,5 @@ a final classification between 0 (Not Phishy) and 4 (Very Phishy).
 Give me ONLY the final number, nothing else"""
 
 print("Generating body response ...")
-consistent_response = get_consistent_response(prompt_body)
+consistent_response = get_average_response(prompt_body)
 print(consistent_response)
