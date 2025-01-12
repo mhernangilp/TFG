@@ -4,6 +4,8 @@ import re
 from collections import defaultdict
 from email.utils import parsedate_tz, mktime_tz
 from datetime import datetime
+import matplotlib.pyplot as plt
+import pandas as pd
 
 def parse_email(raw_email):
     msg = email.message_from_string(raw_email)
@@ -89,40 +91,24 @@ phishing_emails = load_emails_from_folder(phishing_folder_path, multi_email_file
 enron_emails = load_emails_from_folder(enron_folder_path, multi_email_file=False, label=0)
 all_emails = phishing_emails + enron_emails
 
+# Extraer características del email (número de caracteres en la dirección)
+def extract_email_features(headers, label):
+    email_address = headers.get("From", "")
+    num_chars = len(email_address) if email_address else 0
+    return {'num_chars': num_chars, 'label': label}
 
-# Contar la frecuencia de cada header
-header_counts = defaultdict(int)
+# Extraer las características de los emails
+features = [extract_email_features(headers, label) for headers, _, label in all_emails]
 
-for headers, _, _ in all_emails:
-    for key in headers.keys():
-        header_counts[key] += 1
+# Crear un DataFrame para facilitar el análisis
+df = pd.DataFrame(features)
 
-# Convertir el diccionario a una lista ordenada por nombre de header
-sorted_header_counts = sorted(header_counts.items(), key=lambda x: x[1])
+# Crear el gráfico de dispersión
+plt.figure(figsize=(10, 6))
+plt.scatter(df['num_chars'], df['label'], c=df['label'], cmap='coolwarm', alpha=0.6)
 
-# Imprimir los headers únicos con su frecuencia en orden ascendente
-print("Lista de headers únicos ordenados por frecuencia (ascendente):")
-for header, count in sorted_header_counts:
-    print(f"{header}: {count}")
-print(len(all_emails), len(all_emails) / 2)
-
-
-# Imprimir ejemplos curados del campo From
-for headers, body, label in all_emails:
-    if "From" in headers:
-        print(f"From (curado): {headers['From']}")
-
-
-
-
-
-'''print(f"- {key}")
-    print("\nSubject:")
-    if "Subject" in headers:
-        print("- Subject")
-    print("\nBody:")
-    if body.strip():  # Verifica si el cuerpo no está vacío
-        print("- Body")
-    print("\nLabel:")
-    print(label)
-    print("\n" + "-" * 50)  # Separador entre correos'''
+plt.title("Relación entre el número de caracteres en la dirección y si es phishing")
+plt.xlabel("Número de caracteres en la dirección")
+plt.ylabel("Phishing (1) / No Phishing (0)")
+plt.grid(True)
+plt.show()

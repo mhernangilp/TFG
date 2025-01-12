@@ -1,9 +1,10 @@
 import os
 import email
-import re
+import pandas as pd
 from collections import defaultdict
 from email.utils import parsedate_tz, mktime_tz
 from datetime import datetime
+import matplotlib.pyplot as plt
 
 def parse_email(raw_email):
     msg = email.message_from_string(raw_email)
@@ -19,25 +20,6 @@ def parse_email(raw_email):
         print(f"Error decoding email body: {e}")
     return headers, body
 
-def extract_main_type(content_type):
-    """Extrae solo el main_type del Content-Type, ignorando charset y otros parámetros."""
-    if not content_type:
-        return None
-    return content_type.split(";")[0].strip()
-
-def clean_from_field(from_field):
-    """Extrae solo la dirección de correo del campo From."""
-    if not from_field:
-        return None
-    # Buscar dirección de correo en formato estándar
-    match = re.search(r'<([^>]+)>', from_field)
-    if match:
-        return match.group(1).strip()
-    # Si no hay formato estándar, verificar si el campo es una dirección de correo
-    elif re.match(r'^[^@]+@[^@]+\.[^@]+$', from_field.strip()):
-        return from_field.strip()
-    return None
-
 def load_emails_from_folder(folder_path, multi_email_file=False, label=0):
     emails = []
     for file_name in os.listdir(folder_path):
@@ -48,9 +30,6 @@ def load_emails_from_folder(folder_path, multi_email_file=False, label=0):
                 for raw_email in email_content.split('\n\nFrom '):
                     if raw_email.strip():
                         headers, body = parse_email("From " + raw_email.strip())
-                        # Curar el campo From
-                        if "From" in headers:
-                            headers["From"] = clean_from_field(headers["From"])
                         # Estándar de fecha (si existe)
                         if "Date" in headers:
                             date_tuple = parsedate_tz(headers["Date"])
@@ -58,15 +37,9 @@ def load_emails_from_folder(folder_path, multi_email_file=False, label=0):
                                 timestamp = mktime_tz(date_tuple)
                                 standardized_date = datetime.utcfromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
                                 headers["Date"] = standardized_date
-                        # Curar Content-Type
-                        if "Content-Type" in headers:
-                            headers["Content-Type"] = extract_main_type(headers["Content-Type"])
                         emails.append((headers, body, label))
             else:
                 headers, body = parse_email(email_content)
-                # Curar el campo From
-                if "From" in headers:
-                    headers["From"] = clean_from_field(headers["From"])
                 # Estándar de fecha (si existe)
                 if "Date" in headers:
                     date_tuple = parsedate_tz(headers["Date"])
@@ -74,11 +47,23 @@ def load_emails_from_folder(folder_path, multi_email_file=False, label=0):
                         timestamp = mktime_tz(date_tuple)
                         standardized_date = datetime.utcfromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
                         headers["Date"] = standardized_date
-                # Curar Content-Type
-                if "Content-Type" in headers:
-                    headers["Content-Type"] = extract_main_type(headers["Content-Type"])
                 emails.append((headers, body, label))
     return emails
+
+def get_common_attributes(emails, threshold=0.6):
+    attribute_counts = defaultdict(int)
+    total_emails = len(emails)
+    
+    # Contar la frecuencia de cada atributo en los encabezados
+    for headers, _, _ in emails:
+        for attribute in headers:
+            attribute_counts[attribute] += 1
+    
+    # Calcular el umbral en base al porcentaje especificado
+    min_count = total_emails * threshold
+    common_attributes = {attr for attr, count in attribute_counts.items() if count >= min_count}
+    
+    return common_attributes
 
 # Carpetas de emails de phishing y de Enron
 phishing_folder_path = '/home/marky/TFG/resources/raw_data/phishing'
@@ -89,40 +74,31 @@ phishing_emails = load_emails_from_folder(phishing_folder_path, multi_email_file
 enron_emails = load_emails_from_folder(enron_folder_path, multi_email_file=False, label=0)
 all_emails = phishing_emails + enron_emails
 
+# Crear un DataFrame para análisis de el feature Date
+data = []
+for headers, _, label in all_emails:
+    if "Date" in headers:
+        try:
+            date = datetime.strptime(headers["Date"], '%Y-%m-%d %H:%M:%S')
+            data.append({"hour": date.hour, "label": label})
+        except Exception as e:
+            print(f"Error parsing date: {e}")
 
-# Contar la frecuencia de cada header
-header_counts = defaultdict(int)
+df = pd.DataFrame(data)
 
-for headers, _, _ in all_emails:
-    for key in headers.keys():
-        header_counts[key] += 1
+# Agrupar por hora y label
+grouped = df.groupby(["hour", "label"]).size().unstack(fill_value=0)
 
-# Convertir el diccionario a una lista ordenada por nombre de header
-sorted_header_counts = sorted(header_counts.items(), key=lambda x: x[1])
+# Crear el gráfico
+plt.figure(figsize=(10, 6))
+grouped.plot(kind="bar", stacked=False, figsize=(12, 6))
+plt.title("Distribución de emails por hora y etiqueta")
+plt.xlabel("Hora del día")
+plt.ylabel("Cantidad de emails")
+plt.legend(["No phishing", "Phishing"], title="Etiqueta")
+plt.xticks(rotation=45)
+plt.grid(axis="y", linestyle="--", alpha=0.7)
+plt.tight_layout()
 
-# Imprimir los headers únicos con su frecuencia en orden ascendente
-print("Lista de headers únicos ordenados por frecuencia (ascendente):")
-for header, count in sorted_header_counts:
-    print(f"{header}: {count}")
-print(len(all_emails), len(all_emails) / 2)
-
-
-# Imprimir ejemplos curados del campo From
-for headers, body, label in all_emails:
-    if "From" in headers:
-        print(f"From (curado): {headers['From']}")
-
-
-
-
-
-'''print(f"- {key}")
-    print("\nSubject:")
-    if "Subject" in headers:
-        print("- Subject")
-    print("\nBody:")
-    if body.strip():  # Verifica si el cuerpo no está vacío
-        print("- Body")
-    print("\nLabel:")
-    print(label)
-    print("\n" + "-" * 50)  # Separador entre correos'''
+# Mostrar el gráfico
+plt.show()

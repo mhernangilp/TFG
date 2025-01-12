@@ -1,9 +1,9 @@
 import os
 import email
-import re
 from collections import defaultdict
 from email.utils import parsedate_tz, mktime_tz
 from datetime import datetime
+import matplotlib.pyplot as plt
 
 def parse_email(raw_email):
     msg = email.message_from_string(raw_email)
@@ -25,19 +25,6 @@ def extract_main_type(content_type):
         return None
     return content_type.split(";")[0].strip()
 
-def clean_from_field(from_field):
-    """Extrae solo la dirección de correo del campo From."""
-    if not from_field:
-        return None
-    # Buscar dirección de correo en formato estándar
-    match = re.search(r'<([^>]+)>', from_field)
-    if match:
-        return match.group(1).strip()
-    # Si no hay formato estándar, verificar si el campo es una dirección de correo
-    elif re.match(r'^[^@]+@[^@]+\.[^@]+$', from_field.strip()):
-        return from_field.strip()
-    return None
-
 def load_emails_from_folder(folder_path, multi_email_file=False, label=0):
     emails = []
     for file_name in os.listdir(folder_path):
@@ -48,9 +35,6 @@ def load_emails_from_folder(folder_path, multi_email_file=False, label=0):
                 for raw_email in email_content.split('\n\nFrom '):
                     if raw_email.strip():
                         headers, body = parse_email("From " + raw_email.strip())
-                        # Curar el campo From
-                        if "From" in headers:
-                            headers["From"] = clean_from_field(headers["From"])
                         # Estándar de fecha (si existe)
                         if "Date" in headers:
                             date_tuple = parsedate_tz(headers["Date"])
@@ -64,9 +48,6 @@ def load_emails_from_folder(folder_path, multi_email_file=False, label=0):
                         emails.append((headers, body, label))
             else:
                 headers, body = parse_email(email_content)
-                # Curar el campo From
-                if "From" in headers:
-                    headers["From"] = clean_from_field(headers["From"])
                 # Estándar de fecha (si existe)
                 if "Date" in headers:
                     date_tuple = parsedate_tz(headers["Date"])
@@ -89,40 +70,33 @@ phishing_emails = load_emails_from_folder(phishing_folder_path, multi_email_file
 enron_emails = load_emails_from_folder(enron_folder_path, multi_email_file=False, label=0)
 all_emails = phishing_emails + enron_emails
 
+# Agrupar por Content-Type y etiqueta
+content_type_counts = defaultdict(lambda: [0, 0])  # [no_phishing_count, phishing_count]
 
-# Contar la frecuencia de cada header
-header_counts = defaultdict(int)
+for headers, _, label in all_emails:
+    content_type = headers.get("Content-Type", "Unknown")
+    content_type_counts[content_type][label] += 1
 
-for headers, _, _ in all_emails:
-    for key in headers.keys():
-        header_counts[key] += 1
+# Preparar datos para el gráfico
+content_types = list(content_type_counts.keys())
+no_phishing_counts = [counts[0] for counts in content_type_counts.values()]
+phishing_counts = [counts[1] for counts in content_type_counts.values()]
 
-# Convertir el diccionario a una lista ordenada por nombre de header
-sorted_header_counts = sorted(header_counts.items(), key=lambda x: x[1])
+# Crear el gráfico
+x = range(len(content_types))
+width = 0.4
 
-# Imprimir los headers únicos con su frecuencia en orden ascendente
-print("Lista de headers únicos ordenados por frecuencia (ascendente):")
-for header, count in sorted_header_counts:
-    print(f"{header}: {count}")
-print(len(all_emails), len(all_emails) / 2)
+plt.figure(figsize=(12, 6))
+plt.bar(x, no_phishing_counts, width=width, label='No Phishing', color='green')
+plt.bar([i + width for i in x], phishing_counts, width=width, label='Phishing', color='red')
 
+# Etiquetas y título
+plt.xlabel('Content-Type', fontsize=12)
+plt.ylabel('Count', fontsize=12)
+plt.title('Emails by Content-Type and Phishing Status', fontsize=14)
+plt.xticks([i + width / 2 for i in x], content_types, rotation=45, ha='right')
+plt.legend()
 
-# Imprimir ejemplos curados del campo From
-for headers, body, label in all_emails:
-    if "From" in headers:
-        print(f"From (curado): {headers['From']}")
-
-
-
-
-
-'''print(f"- {key}")
-    print("\nSubject:")
-    if "Subject" in headers:
-        print("- Subject")
-    print("\nBody:")
-    if body.strip():  # Verifica si el cuerpo no está vacío
-        print("- Body")
-    print("\nLabel:")
-    print(label)
-    print("\n" + "-" * 50)  # Separador entre correos'''
+# Mostrar el gráfico
+plt.tight_layout()
+plt.show()
