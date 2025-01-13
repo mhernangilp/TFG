@@ -112,6 +112,8 @@ def save_emails_to_csv(emails, output_path):
             "content_type",
             "content_transfer_encoding",
             "num_chars_message_id",
+            "subject",
+            "body",
             "label"
         ])
 
@@ -132,6 +134,10 @@ def save_emails_to_csv(emails, output_path):
             message_id = headers.get("Message-ID")
             num_chars_message_id = len(message_id) if message_id else "NULL"
 
+            subject = headers.get("Subject", "NULL")
+
+            body_text = body if body else "NULL"
+
             # Escribir fila
             writer.writerow([
                 num_chars_from,
@@ -140,6 +146,8 @@ def save_emails_to_csv(emails, output_path):
                 content_type,
                 content_transfer_encoding,
                 num_chars_message_id,
+                subject,
+                body_text,
                 label
             ])
 
