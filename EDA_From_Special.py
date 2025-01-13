@@ -4,6 +4,9 @@ import re
 from collections import defaultdict
 from email.utils import parsedate_tz, mktime_tz
 from datetime import datetime
+import matplotlib.pyplot as plt
+import numpy as np
+from collections import Counter
 
 def parse_email(raw_email):
     msg = email.message_from_string(raw_email)
@@ -90,24 +93,68 @@ enron_emails = load_emails_from_folder(enron_folder_path, multi_email_file=False
 all_emails = phishing_emails + enron_emails
 
 
-# Contar la frecuencia de cada header
-header_counts = defaultdict(int)
+# Función para calcular el número de caracteres no alfanuméricos en la dirección de email
+def calculate_non_alphanumeric_count(email_address):
+    if not email_address:
+        return 0
+    return sum(1 for c in email_address if not c.isalnum())
 
-for headers, _, _ in all_emails:
-    for key in headers.keys():
-        header_counts[key] += 1
+# Crear contadores para phishing y no phishing
+phishing_counts = Counter()
+non_phishing_counts = Counter()
 
-# Convertir el diccionario a una lista ordenada por nombre de header
-sorted_header_counts = sorted(header_counts.items(), key=lambda x: x[1])
+# Rango de números de caracteres no alfanuméricos (0-5, 5-10, ...)
+ranges = [(i, i + 1) for i in range(0, 21, 1)]
 
-# Imprimir los headers únicos con su frecuencia en orden ascendente
-print("Lista de headers únicos ordenados por frecuencia (ascendente):")
-for header, count in sorted_header_counts:
-    print(f"{header}: {count}")
-print(len(all_emails), len(all_emails) / 2)
+# Función para asignar un número a un tramo
+def get_range(count):
+    for lower, upper in ranges:
+        if lower <= count < upper:
+            return f"{lower}-{upper}"
+    return f"{ranges[-1][1]}+"
 
+# Procesar emails y clasificar en tramos
+for headers, body, label in all_emails:
+    from_field = headers.get("From")
+    if from_field:
+        count = calculate_non_alphanumeric_count(from_field)
+        range_label = get_range(count)
+        if label == 1:
+            phishing_counts[range_label] += 1
+        else:
+            non_phishing_counts[range_label] += 1
 
-# Imprimir ejemplos curados del campo From
-'''for headers, body, label in all_emails:
-    if "Subject" in headers and label == 1:
-        print(f"Subject (curado): {headers['Subject']}")'''
+# Ordenar los tramos para el gráfico
+sorted_ranges = [f"{lower}-{upper}" for lower, upper in ranges[:-1]] + [f"{ranges[-1][1]}+"]
+phishing_values = [phishing_counts[range_label] for range_label in sorted_ranges]
+non_phishing_values = [non_phishing_counts[range_label] for range_label in sorted_ranges]
+
+# Configurar el gráfico
+x = np.arange(len(sorted_ranges))  # Posiciones para las etiquetas del eje x
+width = 0.35  # Ancho de las barras
+
+fig, ax = plt.subplots(figsize=(12, 6))
+rects1 = ax.bar(x - width/2, non_phishing_values, width, label='No Phishing (Label 0)', color='blue')
+rects2 = ax.bar(x + width/2, phishing_values, width, label='Phishing (Label 1)', color='red')
+
+# Añadir etiquetas y título
+ax.set_xlabel('Número de Caracteres No Alfanuméricos en el Campo From')
+ax.set_ylabel('Número de Correos')
+ax.set_title('Distribución de Caracteres No Alfanuméricos en Direcciones de Email')
+ax.set_xticks(x)
+ax.set_xticklabels(sorted_ranges, rotation=45)
+ax.legend()
+
+# Añadir etiquetas encima de las barras
+def add_labels(rects):
+    for rect in rects:
+        height = rect.get_height()
+        ax.text(rect.get_x() + rect.get_width()/2., 1.05*height,
+                f'{int(height)}', ha='center', va='bottom')
+
+add_labels(rects1)
+add_labels(rects2)
+
+# Mostrar el gráfico
+plt.tight_layout()
+plt.show()

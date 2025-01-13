@@ -4,6 +4,8 @@ import re
 from collections import defaultdict
 from email.utils import parsedate_tz, mktime_tz
 from datetime import datetime
+import pandas as pd
+import matplotlib.pyplot as plt
 
 def parse_email(raw_email):
     msg = email.message_from_string(raw_email)
@@ -90,24 +92,24 @@ enron_emails = load_emails_from_folder(enron_folder_path, multi_email_file=False
 all_emails = phishing_emails + enron_emails
 
 
-# Contar la frecuencia de cada header
-header_counts = defaultdict(int)
+# Extraer características del email (número de caracteres en el Message-ID)
+def extract_email_features(headers, label):
+    message_id = headers.get("Message-ID", "")
+    num_chars = len(message_id) if message_id else 0
+    return {'num_chars': num_chars, 'label': label}
 
-for headers, _, _ in all_emails:
-    for key in headers.keys():
-        header_counts[key] += 1
+# Extraer las características de los emails
+features = [extract_email_features(headers, label) for headers, _, label in all_emails]
 
-# Convertir el diccionario a una lista ordenada por nombre de header
-sorted_header_counts = sorted(header_counts.items(), key=lambda x: x[1])
+# Crear un DataFrame para facilitar el análisis
+df = pd.DataFrame(features)
 
-# Imprimir los headers únicos con su frecuencia en orden ascendente
-print("Lista de headers únicos ordenados por frecuencia (ascendente):")
-for header, count in sorted_header_counts:
-    print(f"{header}: {count}")
-print(len(all_emails), len(all_emails) / 2)
+# Crear el gráfico de dispersión
+plt.figure(figsize=(10, 6))
+plt.scatter(df['num_chars'], df['label'], c=df['label'], cmap='coolwarm', alpha=0.6)
 
-
-# Imprimir ejemplos curados del campo From
-'''for headers, body, label in all_emails:
-    if "Subject" in headers and label == 1:
-        print(f"Subject (curado): {headers['Subject']}")'''
+plt.title("Relación entre la longitud del Message-ID y si es phishing")
+plt.xlabel("Longitud del Message-ID")
+plt.ylabel("Phishing (1) / No Phishing (0)")
+plt.grid(True)
+plt.show()

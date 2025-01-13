@@ -4,6 +4,7 @@ import re
 from collections import defaultdict
 from email.utils import parsedate_tz, mktime_tz
 from datetime import datetime
+import matplotlib.pyplot as plt
 
 def parse_email(raw_email):
     msg = email.message_from_string(raw_email)
@@ -90,24 +91,33 @@ enron_emails = load_emails_from_folder(enron_folder_path, multi_email_file=False
 all_emails = phishing_emails + enron_emails
 
 
-# Contar la frecuencia de cada header
-header_counts = defaultdict(int)
+# Agrupar por Content-Transfer-Encoding y etiqueta
+encoding_counts = defaultdict(lambda: [0, 0])  # [no_phishing_count, phishing_count]
 
-for headers, _, _ in all_emails:
-    for key in headers.keys():
-        header_counts[key] += 1
+for headers, _, label in all_emails:
+    encoding = headers.get("Content-Transfer-Encoding", "Unknown")
+    encoding_counts[encoding][label] += 1
 
-# Convertir el diccionario a una lista ordenada por nombre de header
-sorted_header_counts = sorted(header_counts.items(), key=lambda x: x[1])
+# Preparar datos para el gráfico
+encodings = list(encoding_counts.keys())
+no_phishing_counts = [counts[0] for counts in encoding_counts.values()]
+phishing_counts = [counts[1] for counts in encoding_counts.values()]
 
-# Imprimir los headers únicos con su frecuencia en orden ascendente
-print("Lista de headers únicos ordenados por frecuencia (ascendente):")
-for header, count in sorted_header_counts:
-    print(f"{header}: {count}")
-print(len(all_emails), len(all_emails) / 2)
+# Crear el gráfico
+x = range(len(encodings))
+width = 0.4
 
+plt.figure(figsize=(12, 6))
+plt.bar(x, no_phishing_counts, width=width, label='No Phishing', color='green')
+plt.bar([i + width for i in x], phishing_counts, width=width, label='Phishing', color='red')
 
-# Imprimir ejemplos curados del campo From
-'''for headers, body, label in all_emails:
-    if "Subject" in headers and label == 1:
-        print(f"Subject (curado): {headers['Subject']}")'''
+# Etiquetas y título
+plt.xlabel('Content-Transfer-Encoding', fontsize=12)
+plt.ylabel('Count', fontsize=12)
+plt.title('Emails by Content-Transfer-Encoding and Phishing Status', fontsize=14)
+plt.xticks([i + width / 2 for i in x], encodings, rotation=45, ha='right')
+plt.legend()
+
+# Mostrar el gráfico
+plt.tight_layout()
+plt.show()

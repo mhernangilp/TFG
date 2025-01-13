@@ -4,6 +4,7 @@ import re
 from collections import defaultdict
 from email.utils import parsedate_tz, mktime_tz
 from datetime import datetime
+import csv
 
 def parse_email(raw_email):
     msg = email.message_from_string(raw_email)
@@ -90,24 +91,62 @@ enron_emails = load_emails_from_folder(enron_folder_path, multi_email_file=False
 all_emails = phishing_emails + enron_emails
 
 
-# Contar la frecuencia de cada header
-header_counts = defaultdict(int)
+def calculate_uppercase_percentage(email_address):
+    if not email_address:
+        return None
+    uppercase_count = sum(1 for c in email_address if c.isupper())
+    lowercase_count = sum(1 for c in email_address if c.islower())
+    if lowercase_count == 0:
+        return 0  # Evitar división por cero
+    return (uppercase_count / lowercase_count) * 100
 
-for headers, _, _ in all_emails:
-    for key in headers.keys():
-        header_counts[key] += 1
+def save_emails_to_csv(emails, output_path):
+    with open(output_path, mode='w', newline='', encoding='utf-8') as csv_file:
+        writer = csv.writer(csv_file)
 
-# Convertir el diccionario a una lista ordenada por nombre de header
-sorted_header_counts = sorted(header_counts.items(), key=lambda x: x[1])
+        # Escribir encabezados
+        writer.writerow([
+            "num_chars_from",
+            "uppercase_percentage_from",
+            "date",
+            "content_type",
+            "content_transfer_encoding",
+            "num_chars_message_id",
+            "label"
+        ])
 
-# Imprimir los headers únicos con su frecuencia en orden ascendente
-print("Lista de headers únicos ordenados por frecuencia (ascendente):")
-for header, count in sorted_header_counts:
-    print(f"{header}: {count}")
-print(len(all_emails), len(all_emails) / 2)
+        for headers, body, label in emails:
+            # Extraer valores
+            from_field = headers.get("From")
+            num_chars_from = len(from_field) if from_field else "NULL"
 
+            uppercase_percentage_from = (
+                calculate_uppercase_percentage(from_field)
+                if from_field else "NULL"
+            )
 
-# Imprimir ejemplos curados del campo From
-'''for headers, body, label in all_emails:
-    if "Subject" in headers and label == 1:
-        print(f"Subject (curado): {headers['Subject']}")'''
+            date = headers.get("Date", "NULL")
+            content_type = headers.get("Content-Type", "NULL")
+            content_transfer_encoding = headers.get("Content-Transfer-Encoding", "NULL")
+
+            message_id = headers.get("Message-ID")
+            num_chars_message_id = len(message_id) if message_id else "NULL"
+
+            # Escribir fila
+            writer.writerow([
+                num_chars_from,
+                uppercase_percentage_from,
+                date,
+                content_type,
+                content_transfer_encoding,
+                num_chars_message_id,
+                label
+            ])
+
+# Ruta de salida para el archivo CSV
+output_csv_path = '/home/marky/TFG/resources/processed_data/emails.csv'
+
+# Guardar todos los emails en formato CSV
+save_emails_to_csv(all_emails, output_csv_path)
+
+print(f"Emails guardados en {output_csv_path}")

@@ -4,6 +4,9 @@ import re
 from collections import defaultdict
 from email.utils import parsedate_tz, mktime_tz
 from datetime import datetime
+import matplotlib.pyplot as plt
+import numpy as np
+from collections import Counter
 
 def parse_email(raw_email):
     msg = email.message_from_string(raw_email)
@@ -89,25 +92,73 @@ phishing_emails = load_emails_from_folder(phishing_folder_path, multi_email_file
 enron_emails = load_emails_from_folder(enron_folder_path, multi_email_file=False, label=0)
 all_emails = phishing_emails + enron_emails
 
+# Función para calcular el porcentaje de mayúsculas en comparación con minúsculas
+def calculate_uppercase_percentage(email_address):
+    if not email_address:
+        return None
+    uppercase_count = sum(1 for c in email_address if c.isupper())
+    lowercase_count = sum(1 for c in email_address if c.islower())
+    if lowercase_count == 0:
+        return 0  # Evitar división por cero
+    return (uppercase_count / lowercase_count) * 100
 
-# Contar la frecuencia de cada header
-header_counts = defaultdict(int)
+# Crear contadores para phishing y no phishing
+phishing_counts = Counter()
+non_phishing_counts = Counter()
 
-for headers, _, _ in all_emails:
-    for key in headers.keys():
-        header_counts[key] += 1
+# Rango de porcentajes (0%-5%, 5%-10%, ...)
+ranges = [(i, i + 5) for i in range(0, 101, 5)]
 
-# Convertir el diccionario a una lista ordenada por nombre de header
-sorted_header_counts = sorted(header_counts.items(), key=lambda x: x[1])
+# Función para asignar un porcentaje a un tramo
+def get_range(percentage):
+    for lower, upper in ranges:
+        if lower <= percentage < upper:
+            return f"{lower}-{upper}%"
+    return "100%"
 
-# Imprimir los headers únicos con su frecuencia en orden ascendente
-print("Lista de headers únicos ordenados por frecuencia (ascendente):")
-for header, count in sorted_header_counts:
-    print(f"{header}: {count}")
-print(len(all_emails), len(all_emails) / 2)
+# Procesar emails y clasificar en tramos
+for headers, body, label in all_emails:
+    from_field = headers.get("From")
+    if from_field:
+        percentage = calculate_uppercase_percentage(from_field)
+        if percentage is not None:
+            range_label = get_range(percentage)
+            if label == 1:
+                phishing_counts[range_label] += 1
+            else:
+                non_phishing_counts[range_label] += 1
 
+# Ordenar los tramos para el gráfico
+sorted_ranges = [f"{lower}-{upper}%" for lower, upper in ranges]
+phishing_values = [phishing_counts[range_label] for range_label in sorted_ranges]
+non_phishing_values = [non_phishing_counts[range_label] for range_label in sorted_ranges]
 
-# Imprimir ejemplos curados del campo From
-'''for headers, body, label in all_emails:
-    if "Subject" in headers and label == 1:
-        print(f"Subject (curado): {headers['Subject']}")'''
+# Configurar el gráfico
+x = np.arange(len(sorted_ranges))  # Posiciones para las etiquetas del eje x
+width = 0.35  # Ancho de las barras
+
+fig, ax = plt.subplots(figsize=(12, 6))
+rects1 = ax.bar(x - width/2, non_phishing_values, width, label='No Phishing', color='blue')
+rects2 = ax.bar(x + width/2, phishing_values, width, label='Phishing', color='red')
+
+# Añadir etiquetas y título
+ax.set_xlabel('Porcentaje de Mayúsculas en el Campo From')
+ax.set_ylabel('Número de Correos')
+ax.set_title('Distribución de Mayúsculas en Direcciones de Email')
+ax.set_xticks(x)
+ax.set_xticklabels(sorted_ranges, rotation=45)
+ax.legend()
+
+# Añadir etiquetas encima de las barras
+def add_labels(rects):
+    for rect in rects:
+        height = rect.get_height()
+        ax.text(rect.get_x() + rect.get_width()/2., 1.05*height,
+                f'{int(height)}', ha='center', va='bottom')
+
+add_labels(rects1)
+add_labels(rects2)
+
+# Mostrar el gráfico
+plt.tight_layout()
+plt.show()
