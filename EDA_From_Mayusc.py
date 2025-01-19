@@ -100,14 +100,14 @@ def calculate_uppercase_percentage(email_address):
     lowercase_count = sum(1 for c in email_address if c.islower())
     if lowercase_count == 0:
         return 0  # Evitar división por cero
-    return (uppercase_count / lowercase_count) * 100
+    return (uppercase_count / (uppercase_count + lowercase_count)) * 100
 
 # Crear contadores para phishing y no phishing
 phishing_counts = Counter()
 non_phishing_counts = Counter()
 
-# Rango de porcentajes (0%-5%, 5%-10%, ...)
-ranges = [(i, i + 5) for i in range(0, 101, 5)]
+# Rango de porcentajes (0%-2%, 2%-4%, ...)
+ranges = [(i, i + 2) for i in range(0, 101, 2)]
 
 # Función para asignar un porcentaje a un tramo
 def get_range(percentage):

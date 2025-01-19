@@ -98,7 +98,7 @@ def calculate_uppercase_percentage(email_address):
     lowercase_count = sum(1 for c in email_address if c.islower())
     if lowercase_count == 0:
         return 0  # Evitar división por cero
-    return (uppercase_count / lowercase_count) * 100
+    return (uppercase_count / (uppercase_count + lowercase_count)) * 100
 
 def save_emails_to_csv(emails, output_path):
     with open(output_path, mode='w', newline='', encoding='utf-8') as csv_file:
