@@ -161,12 +161,10 @@ def process_csv(input_file, output_file):
                 print(f'Processing row {i}, with new subject={row["subject"]} and body={row["body"]}')
 
             i += 1
-            if i >= 30:
-                return
 
 # Archivo de entrada y salida
-input_csv = 'resources/processed_data/testing_output4.csv'
-output_csv = 'resources/processed_data/testing_output5.csv'
+input_csv = 'resources/processed_data/testing_output7.csv'
+output_csv = 'resources/processed_data/testing_output8.csv'
 
 process_csv(input_csv, output_csv)
 print(f"Procesamiento completado. Resultados guardados en {output_csv}.")
