@@ -102,7 +102,7 @@ def calculate_uppercase_percentage(email_address):
 
 def save_emails_to_csv(emails, output_path):
     with open(output_path, mode='w', newline='', encoding='utf-8') as csv_file:
-        writer = csv.writer(csv_file)
+        writer = csv.writer(csv_file, quoting=csv.QUOTE_MINIMAL)
 
         # Escribir encabezados
         writer.writerow([
@@ -147,7 +147,7 @@ def save_emails_to_csv(emails, output_path):
                 content_transfer_encoding,
                 num_chars_message_id,
                 subject,
-                body_text,
+                body_text.replace('\n', ' ').replace('\r', ' '),  # Sustituir saltos de línea
                 label
             ])
 
