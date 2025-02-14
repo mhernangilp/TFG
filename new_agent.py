@@ -9,24 +9,17 @@ prompt = """
 """ + body + """
 </EMAIL_BODY>
 
-For each of the following factors, return a JSON object where each factor is a boolean (`true` or `false`) indicating whether the body line exhibits that characteristic:
+For each of the following factors, return a JSON object where each factor is a boolean (`true` or `false`) indicating whether the body line exhibits that characteristic. Do **NOT** include any explanations, Python code, or comments. Return only the JSON object.
 
 #### Factors to Check:
-1. **Urgency and Threats**:  
-   Does the body line create a sense of urgency or threaten the recipient in any way?  
-2. **Suspicious Keywords**:  
-   Does the body line contain words like "URGENT", "ACTION REQUIRED", "UPDATE NEEDED", "SECURITY ALERT", "SECURITY UPDATE", or similar phishing-related terms?  
-3. **Generic Language**:  
-   Does the body line use generic greetings like "Dear User" or "Hello Customer"?  
-4. **Lack of Personalization**:  
-   Is the body line addressed to a generic recipient rather than a specific name or email address?  
-5. **Request for Sensitive Information**:  
-   Does the body line ask for personal identifiable information (PII), login credentials, or financial data?  
-
----
+1. **Urgency and Threats**
+2. **Suspicious Keywords**
+3. **Generic Language**
+4. **Lack of Personalization**
+5. **Request for Sensitive Information**
 
 ### Expected Output Format:
-Return ONLY a JSON object with the following structure:
+Return **only** a JSON object with the following structure—no explanations, comments, or additional text. If the output contains anything other than a JSON object, the response is incorrect.
 
 ```json
 {
@@ -37,7 +30,7 @@ Return ONLY a JSON object with the following structure:
   "request_for_sensitive_info": true/false
 }
 
-### Examples Output Format:
+### Examples:
 
 Input: "Your account has been suspended. Immediate action required!"
 Output:
@@ -69,7 +62,8 @@ Output:
   "request_for_sensitive_info": false
 }
 
-I want YOU to do the assessment
+### Important:
+Return only the JSON object. No explanations, reasoning, or additional content should be provided.
 """ 
 
 response = ollama.chat(
