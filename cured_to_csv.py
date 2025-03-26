@@ -59,6 +59,7 @@ def load_emails_from_folder(folder_path, multi_email_file=False, label=0):
                                 timestamp = mktime_tz(date_tuple)
                                 standardized_date = datetime.utcfromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
                                 headers["Date"] = standardized_date
+                        emails.append((headers, body, label))
             else:
                 headers, body = parse_email(email_content)
                 # Curar el campo From
@@ -71,6 +72,7 @@ def load_emails_from_folder(folder_path, multi_email_file=False, label=0):
                         timestamp = mktime_tz(date_tuple)
                         standardized_date = datetime.utcfromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
                         headers["Date"] = standardized_date
+                emails.append((headers, body, label))
     return emails
 
 # Carpetas de emails de phishing y de Enron
