@@ -59,10 +59,6 @@ def load_emails_from_folder(folder_path, multi_email_file=False, label=0):
                                 timestamp = mktime_tz(date_tuple)
                                 standardized_date = datetime.utcfromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
                                 headers["Date"] = standardized_date
-                        # Curar Content-Type
-                        if "Content-Type" in headers:
-                            headers["Content-Type"] = extract_main_type(headers["Content-Type"])
-                        emails.append((headers, body, label))
             else:
                 headers, body = parse_email(email_content)
                 # Curar el campo From
@@ -75,10 +71,6 @@ def load_emails_from_folder(folder_path, multi_email_file=False, label=0):
                         timestamp = mktime_tz(date_tuple)
                         standardized_date = datetime.utcfromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
                         headers["Date"] = standardized_date
-                # Curar Content-Type
-                if "Content-Type" in headers:
-                    headers["Content-Type"] = extract_main_type(headers["Content-Type"])
-                emails.append((headers, body, label))
     return emails
 
 # Carpetas de emails de phishing y de Enron
@@ -109,9 +101,6 @@ def save_emails_to_csv(emails, output_path):
             "num_chars_from",
             "uppercase_percentage_from",
             "date",
-            "content_type",
-            "content_transfer_encoding",
-            "num_chars_message_id",
             "subject",
             "body",
             "label"
@@ -128,11 +117,6 @@ def save_emails_to_csv(emails, output_path):
             )
 
             date = headers.get("Date", "NULL")
-            content_type = headers.get("Content-Type", "NULL")
-            content_transfer_encoding = headers.get("Content-Transfer-Encoding", "NULL")
-
-            message_id = headers.get("Message-ID")
-            num_chars_message_id = len(message_id) if message_id else "NULL"
 
             subject = headers.get("Subject", "NULL")
 
@@ -143,9 +127,6 @@ def save_emails_to_csv(emails, output_path):
                 num_chars_from,
                 uppercase_percentage_from,
                 date,
-                content_type,
-                content_transfer_encoding,
-                num_chars_message_id,
                 subject,
                 body_text.replace('\n', ' ').replace('\r', ' '),  # Sustituir saltos de línea
                 label
