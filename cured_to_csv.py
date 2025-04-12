@@ -76,8 +76,8 @@ def load_emails_from_folder(folder_path, multi_email_file=False, label=0):
     return emails
 
 # Carpetas de emails de phishing y de Enron
-phishing_folder_path = '/home/marky/TFG/resources/raw_data/phishing'
-enron_folder_path = '/home/marky/TFG/resources/raw_data/enron'
+phishing_folder_path = './resources/raw_data/phishing'
+enron_folder_path = './resources/raw_data/enron'
 
 # Cargar emails de ambas carpetas con su respectiva etiqueta
 phishing_emails = load_emails_from_folder(phishing_folder_path, multi_email_file=True, label=1)
@@ -94,6 +94,12 @@ def calculate_uppercase_percentage(email_address):
         return 0  # Evitar división por cero
     return (uppercase_count / (uppercase_count + lowercase_count)) * 100
 
+# Función para calcular el número de caracteres no alfanuméricos en la dirección de email
+def calculate_non_alphanumeric_count(email_address):
+    if not email_address:
+        return 0
+    return sum(1 for c in email_address if not c.isalnum())
+
 def save_emails_to_csv(emails, output_path):
     with open(output_path, mode='w', newline='', encoding='utf-8') as csv_file:
         writer = csv.writer(csv_file, quoting=csv.QUOTE_MINIMAL)
@@ -101,6 +107,7 @@ def save_emails_to_csv(emails, output_path):
         # Escribir encabezados
         writer.writerow([
             "num_chars_from",
+            "special_chars_from",
             "uppercase_percentage_from",
             "date",
             "subject",
@@ -115,6 +122,11 @@ def save_emails_to_csv(emails, output_path):
 
             uppercase_percentage_from = (
                 calculate_uppercase_percentage(from_field)
+                if from_field else "NULL"
+            )
+
+            special_chars_from = (
+                calculate_non_alphanumeric_count(from_field)
                 if from_field else "NULL"
             )
 
@@ -135,7 +147,7 @@ def save_emails_to_csv(emails, output_path):
             ])
 
 # Ruta de salida para el archivo CSV
-output_csv_path = '/home/marky/TFG/resources/processed_data/emails.csv'
+output_csv_path = './resources/processed_data/emails.csv'
 
 # Guardar todos los emails en formato CSV
 save_emails_to_csv(all_emails, output_csv_path)
