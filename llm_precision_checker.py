@@ -21,7 +21,7 @@ def compute_accuracy(df, column):
 def plot_distribution(df, column, label_value):
     filtered_df = df[df['label'] == label_value]
     
-    min_val, max_val = 0, 4
+    min_val, max_val = 0, 5
     value_counts = filtered_df[column].value_counts().reindex(range(min_val, max_val + 1), fill_value=0)
     
     plt.figure(figsize=(8, 5))
