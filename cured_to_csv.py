@@ -140,6 +140,7 @@ def save_emails_to_csv(emails, output_path):
             writer.writerow([
                 num_chars_from,
                 uppercase_percentage_from,
+                special_chars_from,
                 date,
                 subject,
                 body_text.replace('\n', ' ').replace('\r', ' '),  # Sustituir saltos de línea
