@@ -6,6 +6,8 @@ from email.utils import parsedate_tz, mktime_tz
 from datetime import datetime
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
+from collections import Counter
 
 def parse_email(raw_email):
     msg = email.message_from_string(raw_email)
@@ -100,15 +102,62 @@ def extract_email_features(headers, label):
 # Extraer las características de los emails
 features = [extract_email_features(headers, label) for headers, _, label in all_emails]
 
-# Crear un DataFrame para facilitar el análisis
-df = pd.DataFrame(features)
+# Crear contadores para phishing y no phishing
+phishing_counts = Counter()
+non_phishing_counts = Counter()
 
-# Crear el gráfico de dispersión
-plt.figure(figsize=(10, 6))
-plt.scatter(df['num_chars'], df['label'], c=df['label'], cmap='coolwarm', alpha=0.6)
+# Rango de números de caracteres
+ranges = [(i, i + 1) for i in range(0, 21, 1)]
 
-plt.title("Relación entre el número de caracteres en la dirección y si es phishing")
-plt.xlabel("Número de caracteres en la dirección")
-plt.ylabel("Phishing (1) / No Phishing (0)")
-plt.grid(True)
+# Función para asignar un número a un tramo
+def get_range(count):
+    for lower, upper in ranges:
+        if lower <= count < upper:
+            return f"{lower}-{upper}"
+    return f"{ranges[-1][1]}+"
+
+# Procesar emails y clasificar en tramos
+for headers, body, label in all_emails:
+    from_field = headers.get("From")
+    if from_field:
+        count = extract_email_features(headers, label)
+        range_label = get_range(count)
+        if label == 1:
+            phishing_counts[range_label] += 1
+        else:
+            non_phishing_counts[range_label] += 1
+
+# Ordenar los tramos para el gráfico
+sorted_ranges = [f"{lower}-{upper}" for lower, upper in ranges[:-1]] + [f"{ranges[-1][1]}+"]
+phishing_values = [phishing_counts[range_label] for range_label in sorted_ranges]
+non_phishing_values = [non_phishing_counts[range_label] for range_label in sorted_ranges]
+
+# Configurar el gráfico
+x = np.arange(len(sorted_ranges))  # Posiciones para las etiquetas del eje x
+width = 0.35  # Ancho de las barras
+
+fig, ax = plt.subplots(figsize=(12, 6))
+rects1 = ax.bar(x - width/2, non_phishing_values, width, label='No Phishing (Label 0)', color='blue')
+rects2 = ax.bar(x + width/2, phishing_values, width, label='Phishing (Label 1)', color='red')
+
+# Añadir etiquetas y título
+ax.set_xlabel('Número de Caracteres en el Campo From')
+ax.set_ylabel('Número de Correos')
+ax.set_title('Distribución de Caracteres en Direcciones de Email')
+ax.set_xticks(x)
+ax.set_xticklabels(sorted_ranges, rotation=45)
+ax.legend()
+
+# Añadir etiquetas encima de las barras
+def add_labels(rects):
+    for rect in rects:
+        height = rect.get_height()
+        ax.text(rect.get_x() + rect.get_width()/2., 1.05*height,
+                f'{int(height)}', ha='center', va='bottom')
+
+add_labels(rects1)
+add_labels(rects2)
+
+# Mostrar el gráfico
+plt.tight_layout()
 plt.show()
