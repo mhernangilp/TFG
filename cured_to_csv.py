@@ -119,18 +119,18 @@ def save_emails_to_csv(emails, output_path):
             # Extraer valores
             from_field = headers.get("From")
             num_chars_from = len(from_field) if from_field else "NULL"
+            
+            special_chars_from = (
+                calculate_non_alphanumeric_count(from_field)
+                if from_field else "NULL"
+            )
 
             uppercase_percentage_from = (
                 calculate_uppercase_percentage(from_field)
                 if from_field else "NULL"
             )
 
-            special_chars_from = (
-                calculate_non_alphanumeric_count(from_field)
-                if from_field else "NULL"
-            )
-
-            date = headers.get("Date", "NULL")
+            date = headers.get("Date", "NULL")[11:13]
 
             subject = headers.get("Subject", "NULL")
 
@@ -139,8 +139,8 @@ def save_emails_to_csv(emails, output_path):
             # Escribir fila
             writer.writerow([
                 num_chars_from,
-                uppercase_percentage_from,
                 special_chars_from,
+                uppercase_percentage_from,
                 date,
                 subject,
                 body_text.replace('\n', ' ').replace('\r', ' '),  # Sustituir saltos de línea
