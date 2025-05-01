@@ -97,17 +97,14 @@ all_emails = phishing_emails + enron_emails
 def extract_email_features(headers, label):
     email_address = headers.get("From", "")
     num_chars = len(email_address) if email_address else 0
-    return {'num_chars': num_chars, 'label': label}
-
-# Extraer las características de los emails
-features = [extract_email_features(headers, label) for headers, _, label in all_emails]
+    return num_chars
 
 # Crear contadores para phishing y no phishing
 phishing_counts = Counter()
 non_phishing_counts = Counter()
 
 # Rango de números de caracteres
-ranges = [(i, i + 1) for i in range(0, 21, 1)]
+ranges = [(i, i + 1) for i in range(0, 51, 1)]
 
 # Función para asignar un número a un tramo
 def get_range(count):
