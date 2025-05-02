@@ -3,21 +3,17 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 # Cargar el dataset
-df = pd.read_csv("resources/processed_data/testing_output.csv")
+df = pd.read_csv('resources/processed_data/dataset.csv')
 
-# Convertir 'date' a timestamp
-df['date'] = pd.to_datetime(df['date']).astype(int) / 10**9  # Convertir a segundos
-
-# Convertir variables categóricas en numéricas
-df = pd.get_dummies(df, columns=['content_type', 'content_transfer_encoding'], drop_first=True)
+# Eliminar la columna 'label'
+df = df.drop(columns=['label'])
 
 # Calcular la matriz de correlación
-corr_matrix = df.corr()
+correlation_matrix = df.corr()
 
-# Visualizar la matriz de correlación
-plt.figure(figsize=(10, 6))
-sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", fmt=".2f", linewidths=0.5)
-plt.title("Matriz de Correlación")
+# Mostrar la matriz de correlación como heatmap
+plt.figure(figsize=(10, 8))
+sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt='.2f')
+plt.title('Matriz de Correlación')
+plt.tight_layout()
 plt.show()
-
-
