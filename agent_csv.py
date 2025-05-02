@@ -3,7 +3,7 @@ import ollama
 import re
 import json
 
-csv.field_size_limit(10**6)
+csv.field_size_limit(10**8)
 
 def validate_json_format(response):
     # Regex para capturar el bloque JSON en el formato esperado
@@ -61,6 +61,7 @@ def process_csv(input_file, output_file):
 
                 # Copiar la fila tal cual si ya está procesada
                 writer.writerow(row)
+                print(f"Fila {i} ya procesada")
 
             except ValueError:
                 # Generar prompts para subject y body si no están procesados
@@ -214,7 +215,7 @@ def process_csv(input_file, output_file):
 
 # Archivo de entrada y salida
 input_csv = 'resources/processed_data/emails.csv'
-output_csv = 'resources/processed_data/dataset.csv'
+output_csv = 'resources/processed_data/dataset2.csv'
 
 process_csv(input_csv, output_csv)
 print(f"Procesamiento completado. Resultados guardados en {output_csv}.")
