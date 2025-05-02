@@ -43,5 +43,5 @@ def main(filepath):
     plot_distribution(df, 'body', 0)
 
 if __name__ == "__main__":
-    filepath = "resources/processed_data/testing_output.csv"
+    filepath = "resources/processed_data/dataset.csv"
     main(filepath)
