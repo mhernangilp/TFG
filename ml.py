@@ -11,11 +11,10 @@ from sklearn.metrics import classification_report, confusion_matrix, roc_auc_sco
 import matplotlib.pyplot as plt
 
 # 1. Cargar el dataset
-# Ajusta la ruta si tu archivo CSV tiene otro nombre o ubicación
 df = pd.read_csv('resources/processed_data/dataset.csv')
 
 # 2. Separar características (X) y etiqueta (y)
-X = df.drop('label', axis=1)
+X = df.drop(['label'], axis=1)
 y = df['label']
 
 # 3. Dividir en entrenamiento y prueba (80% train, 20% test)
@@ -45,13 +44,13 @@ def seleccionar_modelo():
     if choice == '1':
         return LogisticRegression(solver='liblinear',penalty='l2',C=1.0), 'Regresión Logística'
     elif choice == '2':
-        return KNeighborsClassifier(n_neighbors=5), 'K-Nearest Neighbors'
+        return KNeighborsClassifier(n_neighbors=9,weights='distance',metric='minkowski',p=2,n_jobs=-1,algorithm='ball_tree'), 'K-Nearest Neighbors'
     elif choice == '3':
-        return RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1), 'Random Forest'
+        return RandomForestClassifier(n_estimators=100,criterion='gini',max_depth=8,random_state=42,n_jobs=-1), 'Random Forest'
     elif choice == '4':
-        return XGBClassifier(use_label_encoder=False, eval_metric='logloss', random_state=42), 'XGBoost'
+        return XGBClassifier(n_estimators=30,learning_rate=0.3,max_depth=6,eval_metric='logloss',random_state=42), 'XGBoost'
     elif choice == '5':
-        return SVC(probability=True, kernel='rbf', random_state=42), 'Support Vector Machine'
+        return SVC(probability=True,kernel='rbf',C=50,random_state=42), 'Support Vector Machine'
     else:
         print("Opción no válida. Abortando ...")
         exit()
