@@ -214,8 +214,8 @@ def process_csv(input_file, output_file):
             i += 1
 
 # Archivo de entrada y salida
-input_csv = 'resources/processed_data/emails.csv'
-output_csv = 'resources/processed_data/dataset2.csv'
+input_csv = 'resources/processed_data/emails_val.csv'
+output_csv = 'resources/processed_data/dataset_val.csv'
 
 process_csv(input_csv, output_csv)
 print(f"Procesamiento completado. Resultados guardados en {output_csv}.")
