@@ -2,9 +2,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-def load_data(filepath):
-    df = pd.read_csv(filepath)
-    return df
+def load_data(filepaths):
+    dfs = [pd.read_csv(fp) for fp in filepaths]
+    return pd.concat(dfs, ignore_index=True)
 
 def round_values(value):
     return 0 if value <= 2 else 4
@@ -31,8 +31,8 @@ def plot_distribution(df, column, label_value):
     plt.ylabel('Frecuencia')
     plt.show()
 
-def main(filepath):
-    df = load_data(filepath)
+def main(filepaths):
+    df = load_data(filepaths)
     
     for column in ['subject', 'body']:
         compute_accuracy(df, column)
@@ -43,5 +43,8 @@ def main(filepath):
     plot_distribution(df, 'body', 0)
 
 if __name__ == "__main__":
-    filepath = "resources/processed_data/dataset.csv"
-    main(filepath)
+    filepaths = [
+        "resources/processed_data/dataset_train.csv",
+        "resources/processed_data/dataset_val.csv"
+    ]
+    main(filepaths)
