@@ -20,7 +20,6 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # ==========================
 tokenizer = RobertaTokenizerFast.from_pretrained('roberta-base')
 
-# Load base RoBERTa and wrap it with PEFT (LoRA-finetuned weights)
 base_model = RobertaForSequenceClassification.from_pretrained(
     'roberta-base',
     num_labels=2
@@ -34,19 +33,12 @@ model.eval()
 #  Helper Functions
 # ==========================
 def parse_raw_email(raw_email: bytes) -> (str, str):
-    """
-    Receives a raw email (bytes in RFC-822 format),
-    and returns a tuple (subject, body) both as strings.
-    """
     msg = BytesParser(policy=policy.default).parsebytes(raw_email)
 
-    # Extract Subject (may be encoded in some charset)
     subject = msg['subject'] or ''
 
-    # Extract plain-text body
     body = ""
     if msg.is_multipart():
-        # Find the first text/plain part that is not an attachment
         for part in msg.walk():
             content_type = part.get_content_type()
             content_disposition = part.get_content_disposition()
@@ -68,10 +60,6 @@ def parse_raw_email(raw_email: bytes) -> (str, str):
 
 
 def predict_phishing_probability(subject: str, body: str) -> float:
-    """
-    Given subject and body (both strings), returns a float between 0.0 and 1.0
-    representing the model’s predicted probability of phishing.
-    """
     text = (subject + ' ' + body).strip()
     encodings = tokenizer(
         text,
@@ -97,18 +85,6 @@ def predict_phishing_probability(subject: str, body: str) -> float:
 # ==========================
 @app.route('/predict', methods=['POST'])
 def predict():
-    """
-    Expects a JSON body with key "raw_email" containing the entire raw email (RFC-822).
-    Example request body:
-      {
-        "raw_email": "Return-Path: <phisher@example.com>\r\nSubject: ...\r\n..."
-      }
-    Returns JSON with:
-      {
-         "phishing_probability": 87.23,
-         "is_phishing": true
-      }
-    """
     if not request.is_json:
         return jsonify({"error": "Expected a JSON payload with key 'raw_email'."}), 400
 
